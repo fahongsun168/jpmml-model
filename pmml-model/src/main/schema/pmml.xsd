@@ -3438,7 +3438,7 @@
       <xs:sequence>
         <xs:element ref="Extension" minOccurs="0" maxOccurs="unbounded"/>
       </xs:sequence>
-      <xs:attribute name="value" type="xs:string" use="required"/>
+      <xs:attribute name="value" type="FIELD-NAME" use="required"/>
       <xs:attribute name="recordCount" type="NUMBER" use="required"/>
       <xs:attribute name="confidence" type="PROB-NUMBER"/>
       <xs:attribute name="probability" type="PROB-NUMBER"/>

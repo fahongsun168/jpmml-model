@@ -5,10 +5,10 @@ package org.jpmml.model.visitors;
 
 import java.lang.instrument.Instrumentation;
 import java.lang.reflect.Field;
-import java.util.Collections;
+import java.util.Collection;
 import java.util.IdentityHashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import org.dmg.pmml.FieldName;
 import org.dmg.pmml.PMMLObject;
@@ -21,9 +21,7 @@ public class MemoryMeasurer extends AbstractSimpleVisitor {
 
 	private Instrumentation instrumentation = InstrumentationProvider.getInstrumentation();
 
-	private long size = 0L;
-
-	private Set<Object> objects = Collections.newSetFromMap(new IdentityHashMap<Object, Boolean>());
+	private Map<Object, Long> objectSizes = new IdentityHashMap<Object, Long>(1024 * 1024);
 
 
 	@Override
@@ -41,27 +39,30 @@ public class MemoryMeasurer extends AbstractSimpleVisitor {
 	}
 
 	public void reset(){
-		this.size = 0L;
+		this.objectSizes.clear();
+	}
 
-		this.objects.clear();
+	public int getObjectCount(){
+		return this.objectSizes.size();
 	}
 
 	public long getSize(){
-		return this.size;
-	}
+		long sum = 0L;
 
-	public Set<Object> getObjects(){
-		return this.objects;
+		Collection<Long> sizes = this.objectSizes.values();
+		for(Long size : sizes){
+			sum += size.longValue();
+		}
+
+		return sum;
 	}
 
 	private void measure(Object object){
-		boolean status = this.objects.add(object);
+		boolean status = register(object);
 
 		if(!status){
 			return;
-		}
-
-		this.size += this.instrumentation.getObjectSize(object);
+		} // End if
 
 		// Wrapper objects for primitive values do not have Object-type instance fields
 		if(ReflectionUtil.isPrimitiveWrapper(object)){
@@ -93,6 +94,19 @@ public class MemoryMeasurer extends AbstractSimpleVisitor {
 				}
 			}
 		}
+	}
+
+	private boolean register(Object object){
+
+		if(this.objectSizes.containsKey(object)){
+			return false;
+		}
+
+		Long size = Long.valueOf(this.instrumentation.getObjectSize(object));
+
+		this.objectSizes.put(object, size);
+
+		return true;
 	}
 
 	static
